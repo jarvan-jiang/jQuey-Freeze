@@ -1,14 +1,4 @@
-﻿/*
-* jQuery Table Panel Freezing Plug-in
-*
-* Copyright 2012, Ken Yang
-*
-* Dual licensed under the MIT and GPL licenses:
-* http://www.opensource.org/licenses/mit-license.php
-* http://www.gnu.org/licenses/gpl.html
-*
-*/
-
+﻿
 (function ($) {
     $.fn.freeze = function (options) {
 
@@ -22,6 +12,25 @@
         $(this).filter("table").each(function () {
 
             var _topLeftWrapper, _colHeaderWrapper, _rowHeaderWrapper;
+            var _headerHeight = 0;
+            var _headerWidth = 0;
+
+            if ($(this).width() < options.width && $(this).height() < options.height)
+                return;
+            if ($(this).attr("freeze"))
+                return;
+            $(this).find("tr:lt(" + options.rows + ")").each(function () {
+                _headerHeight = _headerHeight + $(this).height();
+            });
+            //alert(_headerHeight);
+
+            $(this).find("tr:eq(0)").find("th,td").slice(0, options.cols).each(function () {
+                if ($(this).css("display") != "none")
+                    _headerWidth = _headerWidth + $(this).outerWidth();
+            });
+
+            _headerHeight = _headerHeight;
+            _headerWidth = _headerWidth;
 
             _topLeftWrapper = $("<div></div>")
                             .css({
@@ -34,17 +43,20 @@
             var _tabCorner = $(this).clone()
                                     .removeAttr("id")
                                     .appendTo(_topLeftWrapper);
+            _tabCorner.find(".charttd").empty();
 
-            $(_tabCorner).find("tr:gt(" + (options.rows - 1) + ")").remove();
-
+            //$(_tabCorner).find("tr:gt(" + (options.rows - 1) + ")").remove();
+            //$(_tabCorner).find("tr:gt(" + (options.rows - 1) + ").chart").remove();
             _colHeaderWrapper = $("<div></div>")
-                                    .css({ position: "relative",
+                                    .css({
+                                        position: "relative",
                                         zIndex: "0",
                                         overflow: "hidden"
                                     });
 
             _rowHeaderWrapper = $("<div></div>")
-                                    .css({ position: "relative",
+                                    .css({
+                                        position: "relative",
                                         zIndex: "0",
                                         overflow: "hidden",
                                         float: "left"
@@ -53,13 +65,16 @@
             var _tabRowHeader = $(this).clone()
                                    .removeAttr("id")
                                    .appendTo(_rowHeaderWrapper);
+            _tabRowHeader.find(".charttd").empty();
 
             var _tableWrapper = $("<div></div")
-                .css({ position: "relative",
+                .css({
+                    position: "relative",
                     overflow: "auto"
                 });
 
             var _newTable = $(this).clone();
+            $(_newTable).attr("freeze", true);
 
             $(_tableWrapper).append(_newTable);
 
@@ -71,25 +86,6 @@
 
             $(this).replaceWith(_outerWrapper);
 
-            var _headerHeight = 0;
-            var border = 0;
-            border = parseInt(this.border);
-
-            if (!border) {
-                border = 0;
-            }
-
-            $(_newTable).find("tr:lt(" + options.rows + ")").each(function () {
-                _headerHeight = _headerHeight + $(this).height(); 
-            });
-
-            _headerHeight = _headerHeight + border * 2;
-
-            var _headerWidth = 0;
-            $(_newTable).find("tr:eq(0)").find("th,td").slice(0, options.cols).each(function () {
-                _headerWidth = _headerWidth + $(this).width();
-            });
-            _headerWidth = _headerWidth + border * 2;
 
             $(_topLeftWrapper).css({
                 width: _headerWidth + "px",
@@ -97,35 +93,49 @@
             }).addClass("topLeftWrapper");
 
             $("tr", _tabCorner).each(function (rowIndex) {
-                $(this).css("height", $(_newTable).find("tr:eq(" + rowIndex + ")").height() + "px");
+                // $(this).css("height", $(_newTable).find("tr:eq(" + rowIndex + ")").height() + "px");
                 $("th,td", this).each(function (cellIndex) {
-                    $(this).css("width", $("tr", _newTable).eq(rowIndex).find("th,td").eq(cellIndex).width() + "px");
+                    //var width = $("tr", _newTable).eq(rowIndex).find("th,td").eq(cellIndex).width();
+                    //$(this).css("width", width + "px");
                 });
             });
 
+
             $(_colHeaderWrapper).css({
-                width: $(_newTable).height() <= options.height ? (options.width - _headerWidth) + "px" : (options.width - _headerWidth - 16) + "px",
+                width: (options.width - _headerWidth) + "px",
                 height: _headerHeight + "px"
             }).addClass("colHeaderWrapper");
 
             var _tabColHeader = $(_tabCorner).clone()
                 .css({
-                    marginLeft: (-_headerWidth - border - 1) + "px",
-                    width: $(_newTable).width() + "px"
+                    marginLeft: (-_headerWidth) + "px",
+                    //width: $(_newTable).width() + "px"
+                    width: "auto"
                 })
                 .appendTo(_colHeaderWrapper);
+            _tabColHeader.find(".charttd").empty();
+            //重新计算宽度
+            var _colHeaderWidth = 0;
+            $(_tabColHeader).find("tr:eq(0)").find("th,td").slice(0, options.cols).each(function () {
+                if ($(this).is(":visible"))
+                    _colHeaderWidth = _colHeaderWidth + $(this).outerWidth();
+            });
+            _tabColHeader.css("marginLeft", (-_colHeaderWidth) + "px");
 
+
+            $(_colHeaderWrapper).css("width", (options.width - _colHeaderWidth - 16) + "px");
+            /**/
 
             $("tr", _tabCorner).each(function (rowIndex) {
-                $(this).find("th,td").slice(options.cols).remove();
+                //$(this).find("th,td").slice(options.cols).remove();
             });
-            $(_tabCorner).css("width", _headerWidth + "px");
-
+            //$(_tabCorner).css("width", _headerWidth + "px");
+            $(_tabCorner).css("width", "auto");
 
             $(_tabRowHeader).find("tr").each(function (rowIndex) {
-                $(this).find("td,th").slice(options.cols).remove();
+                //$(this).find("td,th").slice(options.cols).remove();
                 $("td,th", this).each(function (cellIndex) {
-                    $(this).css("width", $("tr", _newTable).eq(rowIndex).find("td,th").eq(cellIndex).width() + "px");
+                    //$(this).css("width", $("tr", _newTable).eq(rowIndex).find("td,th").eq(cellIndex).outerWidth() + "px");
                 });
             });
 
@@ -135,25 +145,31 @@
             }).addClass("rowHeaderWrapper");
 
             $(_tabRowHeader).css({
-                width: _headerWidth + "px",
+                //width: _headerWidth + "px",
+                width: "auto",
                 marginTop: (-_headerHeight) + "px"
             });
 
             $(_tableWrapper).css({
-                width: (options.width - _headerWidth) + "px",
+                width: (options.width - _colHeaderWidth) + "px",
                 height: (options.height - _headerHeight) + "px"
             }).scroll(function () {
-                $(_tabColHeader).css("marginLeft", (-$(this).scrollLeft() - _headerWidth - border - 1) + "px");
+                var _colHeaderWidth = 0;
+                $(_tabColHeader).find("tr:eq(0)").find("th,td").slice(0, options.cols).each(function () {
+                    if ($(this).css("display") != "none")
+                        _colHeaderWidth = _colHeaderWidth + $(this).outerWidth();
+                });
+                $(_tabColHeader).css("marginLeft", (-$(this).scrollLeft() - _colHeaderWidth) + "px");
                 $(_tabRowHeader).css("marginTop", (-$(this).scrollTop() - _headerHeight) + "px");
             });
 
             $(_newTable).css({
-                marginLeft: (-_headerWidth - border - 1) + "px",
+                marginLeft: (-_colHeaderWidth) + "px",
                 marginTop: -_headerHeight + "px"
             });
 
             $(_newTable).find("tr:eq(0)").find("td,th").each(function (index) {
-                $(this).css("width", $(_tabColHeader).find("tr:eq(0)").find("td,th").eq(index).width() + "px");
+                //$(this).css("width", $(_tabColHeader).find("tr:eq(0)").find("td,th").eq(index).outerWidth() + "px");
             });
 
             $("tr", _newTable).each(function (index) {
@@ -161,9 +177,10 @@
                 var _tableRowHeight = $(this).height();
                 if (_headerRowHeight > _tableRowHeight)
                     $(this).css("height", _headerRowHeight + "px");
-                else
-                    $("tr", _tabRowHeader).eq(index).css("height", _tableRowHeight + "px");
+                //else
+                //    $("tr", _tabRowHeader).eq(index).css("height", _tableRowHeight + "px");
             });
+
 
         });
 
